@@ -1,7 +1,9 @@
 #include<WiFi.h>
 #include<WiFiUdp.h> // Réseau UDP
-#include<OSCMessage.h> // Protocole OSC
+#include<OSCMessage.h> // Protoco le OSC
 #include<Wire.h> // Pour le MPU6500
+#include <MFRC522DriverPinSimple.h> // Pour le Card scan
+#include <MFRC522Debug.h>
 
 // Pour le Wifi --------------------
 const char hotspotName[] = "SWORD";
@@ -17,15 +19,29 @@ const int MPU_addr=0x68;  // I2C address of the MPU-6050
 int16_t AcX,AcY,AcZ,/*GyX,GyY,*/GyZ; // acceleration X, Y et Z et Gyro X, Y, Z
 int16_t prevAcX,prevAcY,prevAcZ,prevGyZ;
 int16_t idleCalibration = 500;
+
+// Pour la carte
+// Learn more about using SPI/I2C or check the pin assigment for your board: https://github.com/OSSLibraries/Arduino_MFRC522v2#pin-layout
+MFRC522DriverPinSimple ss_pin(5);
+
+MFRC522DriverSPI driver{ss_pin}; // Create SPI driver
+//MFRC522DriverI2C driver{};     // Create I2C driver
+MFRC522 mfrc522{driver};         // Create MFRC522 instance
+
+const int pinLED = 12;
+bool ledState = 0;
+
 void setup() 
 {
   setup_WiFi();
   setup_MPU6500();
+  setup_card();
 }
 
 void loop() 
 {
   grab_MPU6500_data();
+  grab_card_data();
   sendData();
   delay(50);
 }
@@ -46,6 +62,19 @@ void setup_MPU6500() // Initialize le MPU6500
   prevAcX,prevAcY,prevAcZ,prevGyZ = 0;
 }
 
+void setup_card() // Initialize le MFC522
+{
+  Serial.begin(115200);  // Initialize serial communication
+  while (!Serial);       // Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4).
+  
+  mfrc522.PCD_Init();    // Init MFRC522 board.
+  MFRC522Debug::PCD_DumpVersionToSerial(mfrc522, Serial);	// Show details of PCD - MFRC522 Card Reader details.
+  Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
+
+  pinMode(pinLED, OUTPUT);
+  digitalWrite(pinLED, ledState);
+}
+
 void grab_MPU6500_data() // Collecte les valeurs MPU6500
 {
   Wire.beginTransmission(MPU_addr);
@@ -59,6 +88,36 @@ void grab_MPU6500_data() // Collecte les valeurs MPU6500
   /*GyX=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
   GyY=Wire.read()<<8|Wire.read();*/  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
   GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
+}
+
+void grab_card_data() // Collecte les données du MFC522
+{
+  if (!mfrc522.PICC_IsNewCardPresent()) {
+		return;
+	}
+
+	// Select one of the cards.
+	if (!mfrc522.PICC_ReadCardSerial()) {
+		return;
+	}
+
+  Serial.print("Card UID: ");
+  MFRC522Debug::PrintUID(Serial, (mfrc522.uid));
+  Serial.println();
+
+  // Save the UID on a String variable
+  String uidString = "";
+  for (byte i = 0; i < mfrc522.uid.size; i++) {
+    if (mfrc522.uid.uidByte[i] < 0x10) {
+      uidString += "0"; 
+
+      ledState = !ledState;
+      digitalWrite(pinLED, ledState);
+      delay(100);
+    }
+    uidString += String(mfrc522.uid.uidByte[i], HEX);
+  }
+  Serial.println(uidString);
 }
 
 void sendData() // Envoie les données en OSC
