@@ -1,0 +1,20 @@
+WIDTH x HEIGHT x PROFONDEUR
+
+- NFC PLAQUE : 58.7 (64.3 avec piins) x 38.4 x 06.4
+
+- NFC SENSOR : 31.8 diametre x 39.1 (avec pinouche)
+
+- GYROSCOPE : 26.4 x 15.4 x 10.3
+
+- BREADBOARD v1 : 82.3 x 54.2 x 9.5
+
+- ESP : 53.1 x 27.9 x 13
+
+	SWORD BLADE
+
+milieu holes i forgor : 8.5mm
+
+depth of holes sword : 7mm
+
+arrondis sides : 6mm
+arrondi top : 1mm
