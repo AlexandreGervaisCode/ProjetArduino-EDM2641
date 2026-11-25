@@ -14,8 +14,9 @@ const int outPort = 8000; // port écouté
 // Pour le MPU6500 --------------------
 const int MPU_addr=0x68;  // I2C address of the MPU-6050
 
-int16_t AcX,AcY,AcZ,GyX,GyY,GyZ; // acceleration X, Y et Z et Gyro X, Y, Z
-
+int16_t AcX,AcY,AcZ,/*GyX,GyY,*/GyZ; // acceleration X, Y et Z et Gyro X, Y, Z
+int16_t prevAcX,prevAcY,prevAcZ,prevGyZ;
+int16_t idleCalibration = 500;
 void setup() 
 {
   setup_WiFi();
@@ -42,6 +43,7 @@ void setup_MPU6500() // Initialize le MPU6500
   Wire.write(0x6B);  // PWR_MGMT_1 register
   Wire.write(0);     // set to zero (wakes up the MPU-6050)
   Wire.endTransmission(true);
+  prevAcX,prevAcY,prevAcZ,prevGyZ = 0;
 }
 
 void grab_MPU6500_data() // Collecte les valeurs MPU6500
@@ -62,31 +64,43 @@ void grab_MPU6500_data() // Collecte les valeurs MPU6500
 void sendData() // Envoie les données en OSC
 {
   // OSC Accel X --------------------
-  OSCMessage msgAccelX("/accelX");
-  msgAccelX.add(AcX); // Message "/accelX <int>"
+  if (AcX - prevAcX > idleCalibration || AcX - prevAcX < idleCalibration*-1)
+  {
+    OSCMessage msgAccelX("/accelX");
+    msgAccelX.add(AcX); // Message "/accelX <int>"
 
-  Udp.beginPacket(IP_ordinateur, outPort);
-  msgAccelX.send(Udp);
-  Udp.endPacket();
-  msgAccelX.empty(); // On vide l'espace en mémoire
+    Udp.beginPacket(IP_ordinateur, outPort);
+    msgAccelX.send(Udp);
+    Udp.endPacket();
+    msgAccelX.empty(); // On vide l'espace en mémoire
+    prevAcX = AcX;
+  }
 
   // OSC Accel Y --------------------
-  OSCMessage msgAccelY("/accelY");
-  msgAccelY.add(AcY); // Message "/accelY <int>"
+  if (AcY - prevAcY > idleCalibration || AcY - prevAcY < idleCalibration*-1)
+  {
+    OSCMessage msgAccelY("/accelY");
+    msgAccelY.add(AcY); // Message "/accelY <int>"
 
-  Udp.beginPacket(IP_ordinateur, outPort);
-  msgAccelY.send(Udp);
-  Udp.endPacket();
-  msgAccelY.empty(); // On vide l'espace en mémoire
+    Udp.beginPacket(IP_ordinateur, outPort);
+    msgAccelY.send(Udp);
+    Udp.endPacket();
+    msgAccelY.empty(); // On vide l'espace en mémoire
+    prevAcY = AcY;
+  }
 
   // OSC Accel Z --------------------
-  OSCMessage msgAccelZ("/accelZ");
-  msgAccelZ.add(AcZ); // Message "/accelZ <int>"
+  if (AcZ - prevAcZ > idleCalibration || AcZ - prevAcZ < idleCalibration*-1)
+  {
+    OSCMessage msgAccelZ("/accelZ");
+    msgAccelZ.add(AcZ); // Message "/accelZ <int>"
 
-  Udp.beginPacket(IP_ordinateur, outPort);
-  msgAccelZ.send(Udp);
-  Udp.endPacket();
-  msgAccelZ.empty(); // On vide l'espace en mémoire
+    Udp.beginPacket(IP_ordinateur, outPort);
+    msgAccelZ.send(Udp);
+    Udp.endPacket();
+    msgAccelZ.empty(); // On vide l'espace en mémoire
+    prevAcZ = AcZ;
+  }
 
   // OSC Gyro X --------------------
   /*OSCMessage msgGyroX("/gyroX");
@@ -107,11 +121,15 @@ void sendData() // Envoie les données en OSC
   msgGyroY.empty();*/ // On vide l'espace en mémoire
 
   // OSC Gyro Z --------------------
-  OSCMessage msgGyroZ("/gyroZ");
-  msgGyroZ.add(GyZ); // Message "/gyroZ <int>"
+  if (GyZ - prevGyZ > 0 || GyZ - prevGyZ < -0)
+  {
+    OSCMessage msgGyroZ("/gyroZ");
+    msgGyroZ.add(GyZ); // Message "/gyroZ <int>"
 
-  Udp.beginPacket(IP_ordinateur, outPort);
-  msgGyroZ.send(Udp);
-  Udp.endPacket();
-  msgGyroZ.empty(); // On vide l'espace en mémoire
+    Udp.beginPacket(IP_ordinateur, outPort);
+    msgGyroZ.send(Udp);
+    Udp.endPacket();
+    msgGyroZ.empty(); // On vide l'espace en mémoire
+    prevGyZ = GyZ;
+  }
 }
