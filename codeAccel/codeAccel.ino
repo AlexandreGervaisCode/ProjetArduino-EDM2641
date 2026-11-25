@@ -14,7 +14,7 @@ const int outPort = 8000; // port écouté
 // Pour le MPU6500 --------------------
 const int MPU_addr=0x68;  // I2C address of the MPU-6050
 
-int16_t AcX,AcY,AcZ; // acceleration X, Y et Z
+int16_t AcX,AcY,AcZ,GyX,GyY,GyZ; // acceleration X, Y et Z et Gyro X, Y, Z
 
 void setup() 
 {
@@ -54,6 +54,9 @@ void grab_MPU6500_data() // Collecte les valeurs MPU6500
   AcX=Wire.read()<<8|Wire.read();  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)    
   AcY=Wire.read()<<8|Wire.read();  // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
   AcZ=Wire.read()<<8|Wire.read();  // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
+  /*GyX=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
+  GyY=Wire.read()<<8|Wire.read();*/  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
+  GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
 }
 
 void sendData() // Envoie les données en OSC
@@ -78,10 +81,37 @@ void sendData() // Envoie les données en OSC
 
   // OSC Accel Z --------------------
   OSCMessage msgAccelZ("/accelZ");
-  msgAccelZ.add(AcZ); // Message "/accelY <int>"
+  msgAccelZ.add(AcZ); // Message "/accelZ <int>"
 
   Udp.beginPacket(IP_ordinateur, outPort);
   msgAccelZ.send(Udp);
   Udp.endPacket();
   msgAccelZ.empty(); // On vide l'espace en mémoire
+
+  // OSC Gyro X --------------------
+  /*OSCMessage msgGyroX("/gyroX");
+  msgGyroX.add(GyX); // Message "/gyroX <int>"
+
+  Udp.beginPacket(IP_ordinateur, outPort);
+  msgGyroX.send(Udp);
+  Udp.endPacket();
+  msgGyroX.empty(); // On vide l'espace en mémoire
+
+  // OSC Accel Y --------------------
+  OSCMessage msgGyroY("/gyroY");
+  msgGyroY.add(GyY); // Message "/gyroY <int>"
+
+  Udp.beginPacket(IP_ordinateur, outPort);
+  msgGyroY.send(Udp);
+  Udp.endPacket();
+  msgGyroY.empty();*/ // On vide l'espace en mémoire
+
+  // OSC Gyro Z --------------------
+  OSCMessage msgGyroZ("/gyroZ");
+  msgGyroZ.add(GyZ); // Message "/gyroZ <int>"
+
+  Udp.beginPacket(IP_ordinateur, outPort);
+  msgGyroZ.send(Udp);
+  Udp.endPacket();
+  msgGyroZ.empty(); // On vide l'espace en mémoire
 }
